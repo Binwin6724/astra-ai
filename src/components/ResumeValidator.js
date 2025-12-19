@@ -16,7 +16,7 @@ import {
 import { analyzeResume } from '@/services';
 
 // Initialize PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 /**
  * Resume validation and analysis component
@@ -137,8 +137,8 @@ function ResumeValidator({ settings }) {
                 <button
                   onClick={() => setInputMode('text')}
                   className={`px-3 py-1 text-xs rounded-md transition-all ${inputMode === 'text'
-                      ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
-                      : 'text-gray-500 hover:text-gray-300'
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
+                    : 'text-gray-500 hover:text-gray-300'
                     }`}
                 >
                   Text
@@ -146,8 +146,8 @@ function ResumeValidator({ settings }) {
                 <button
                   onClick={() => setInputMode('pdf')}
                   className={`px-3 py-1 text-xs rounded-md transition-all ${inputMode === 'pdf'
-                      ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
-                      : 'text-gray-500 hover:text-gray-300'
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
+                    : 'text-gray-500 hover:text-gray-300'
                     }`}
                 >
                   PDF
