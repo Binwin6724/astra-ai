@@ -1,16 +1,15 @@
-# This workflow will install dependencies, lint the code, and build the Astra AI app
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Build Astra AI
+# This workflow will install dependencies, lint the code, build, and deploy the Astra AI app
+name: Build and Deploy Astra AI
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +23,6 @@ jobs:
           
       - name: Install dependencies
         run: npm install && npm install @rollup/rollup-linux-x64-gnu
-
         
       - name: Lint
         run: npm run lint
@@ -36,3 +34,8 @@ jobs:
           VITE_GMAIL_CLIENT_ID: ${{ secrets.VITE_GMAIL_CLIENT_ID }}
           VITE_GMAIL_CLIENT_SECRET: ${{ secrets.VITE_GMAIL_CLIENT_SECRET }}
 
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist # The folder the action should deploy.
+          branch: gh-pages # The branch the action should deploy to.
