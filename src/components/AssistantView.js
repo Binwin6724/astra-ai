@@ -160,10 +160,10 @@ function AssistantView({ settingsRef, jobActions }) {
           {/* Avatar */}
           <div
             className={`w-40 h-40 mx-auto rounded-full flex items-center justify-center transition-all duration-700 relative ${state === AssistantState.SPEAKING
-                ? 'bg-blue-500/10 scale-105'
-                : state === AssistantState.LISTENING
-                  ? 'bg-violet-500/10 scale-105'
-                  : 'bg-gray-800/20'
+              ? 'bg-blue-500/10 scale-105'
+              : state === AssistantState.LISTENING
+                ? 'bg-violet-500/10 scale-105'
+                : 'bg-gray-800/20'
               }`}
           >
             {(state === AssistantState.LISTENING ||
@@ -172,10 +172,10 @@ function AssistantView({ settingsRef, jobActions }) {
               )}
             <div
               className={`p-8 rounded-full transition-all duration-500 ${state === AssistantState.SPEAKING
-                  ? 'bg-blue-600 shadow-lg shadow-blue-500/20'
-                  : state === AssistantState.LISTENING
-                    ? 'bg-violet-600 shadow-lg shadow-violet-500/20'
-                    : 'bg-gray-800'
+                ? 'bg-blue-600 shadow-lg shadow-blue-500/20'
+                : state === AssistantState.LISTENING
+                  ? 'bg-violet-600 shadow-lg shadow-violet-500/20'
+                  : 'bg-gray-800'
                 }`}
             >
               {state === AssistantState.ERROR ? (
@@ -236,12 +236,18 @@ function AssistantView({ settingsRef, jobActions }) {
           <form onSubmit={handleSendText} className="relative group">
             <div className="absolute inset-0 bg-violet-500/5 rounded-2xl blur-xl group-focus-within:bg-violet-500/10 transition-all pointer-events-none" />
             <div className="glass rounded-2xl p-2 flex items-center gap-2 border border-white/10 group-focus-within:border-violet-500/50 transition-all shadow-2xl relative">
-              <input
-                type="text"
+              <textarea
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendText(e);
+                  }
+                }}
                 placeholder="Ask me anything or track a job..."
-                className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-sm text-white placeholder-gray-500"
+                className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-sm text-white placeholder-gray-500 resize-none min-h-[44px] max-h-32"
+                rows={1}
               />
               <button
                 type="submit"
