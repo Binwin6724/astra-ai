@@ -30,7 +30,7 @@ jobs:
         run: npm run lint
         
       - name: Build
-        run: npm run build
+        run: npm run dev
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
           VITE_GMAIL_CLIENT_ID: ${{ secrets.VITE_GMAIL_CLIENT_ID }}
