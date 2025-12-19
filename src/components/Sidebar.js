@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Sparkles,
   MessageSquare,
@@ -39,11 +38,10 @@ function Sidebar({ activeTab, onTabChange }) {
           <button
             key={id}
             onClick={() => onTabChange(id)}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all ${
-              activeTab === id
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all ${activeTab === id
                 ? 'bg-violet-600 text-white glow'
                 : 'text-gray-400 hover:bg-white/5'
-            }`}
+              }`}
           >
             <Icon size={20} />
             <span className="font-medium hidden md:block">{label}</span>
@@ -55,11 +53,10 @@ function Sidebar({ activeTab, onTabChange }) {
       <div className="px-3">
         <button
           onClick={() => onTabChange(AppTab.SETTINGS)}
-          className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all ${
-            activeTab === AppTab.SETTINGS
+          className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl transition-all ${activeTab === AppTab.SETTINGS
               ? 'bg-violet-600 text-white glow'
               : 'text-gray-400 hover:bg-white/5'
-          }`}
+            }`}
         >
           <Settings size={20} />
           <span className="font-medium hidden md:block">Settings</span>

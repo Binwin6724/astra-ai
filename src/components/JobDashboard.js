@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Briefcase, Plus, RefreshCcw, Loader2 } from 'lucide-react';
 import JobCard from './JobCard';
 import JobModal from './JobModal';

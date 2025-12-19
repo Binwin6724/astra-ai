@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar, Link2, Trash2, Edit2 } from 'lucide-react';
 import StatusIcon from './StatusIcon';
 
@@ -28,7 +27,7 @@ function JobCard({ job, onEdit, onDelete, timezone }) {
     try {
       const combined = timeString ? `${dateString}T${timeString}` : dateString;
       const date = new Date(combined);
-      
+
       if (isNaN(date.getTime())) return dateString;
 
       return new Intl.DateTimeFormat('en-US', {

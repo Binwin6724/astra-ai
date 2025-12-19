@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import {
   FileText,
@@ -136,21 +136,19 @@ function ResumeValidator({ settings }) {
               <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
                 <button
                   onClick={() => setInputMode('text')}
-                  className={`px-3 py-1 text-xs rounded-md transition-all ${
-                    inputMode === 'text'
+                  className={`px-3 py-1 text-xs rounded-md transition-all ${inputMode === 'text'
                       ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
                       : 'text-gray-500 hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   Text
                 </button>
                 <button
                   onClick={() => setInputMode('pdf')}
-                  className={`px-3 py-1 text-xs rounded-md transition-all ${
-                    inputMode === 'pdf'
+                  className={`px-3 py-1 text-xs rounded-md transition-all ${inputMode === 'pdf'
                       ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
                       : 'text-gray-500 hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   PDF
                 </button>

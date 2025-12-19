@@ -155,7 +155,7 @@ function App() {
     } finally {
       setIsSyncingGmail(false);
     }
-  }, [settings.isGmailConnected, isSyncingGmail, settingsRef, saveJobApplication, updateJobStatus, applicationsRef]);
+  }, [settings.isGmailConnected, isSyncingGmail, settingsRef, saveJobApplication, updateJobStatus, applicationsRef, updateSettings]);
 
   // Job action handlers for assistant view
   const jobActions = {

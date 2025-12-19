@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { User, Sparkles } from 'lucide-react';
 
 /**
@@ -8,7 +8,7 @@ import { User, Sparkles } from 'lucide-react';
  */
 function parseMarkdown(text) {
   if (!text) return '';
-  
+
   return text
     // Bold: **text** or __text__
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -50,9 +50,8 @@ function TranscriptionLog({ messages }) {
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className={`flex items-start gap-3 ${
-            msg.role === 'user' ? 'justify-end' : 'justify-start'
-          }`}
+          className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'
+            }`}
         >
           {msg.role === 'assistant' && (
             <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-1">
@@ -61,13 +60,12 @@ function TranscriptionLog({ messages }) {
           )}
 
           <div
-            className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
-              msg.role === 'user'
+            className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${msg.role === 'user'
                 ? 'bg-blue-600 text-white rounded-tr-none'
                 : 'bg-white/10 text-gray-100 border border-white/5 rounded-tl-none'
-            }`}
+              }`}
           >
-            <p 
+            <p
               className="leading-relaxed"
               dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text) }}
             />

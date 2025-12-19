@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   User,
   Volume2,
@@ -70,7 +70,7 @@ function SettingsView({ settings, onUpdate, onClearData }) {
       authUrl.searchParams.set('prompt', 'consent'); // Ensure refresh token is sent
 
       // Open OAuth popup
-      const popup = window.open(
+      window.open(
         authUrl.toString(),
         'gmail-oauth',
         'width=500,height=600,scrollbars=yes'
