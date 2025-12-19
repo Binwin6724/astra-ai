@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    base: '/astra-ai/',
+    base: './',
     plugins: [react()],
     esbuild: {
       loader: 'jsx',
