@@ -1,0 +1,38 @@
+# This workflow will install dependencies, lint the code, and build the Astra AI app
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Build Astra AI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install && npm install @rollup/rollup-linux-x64-gnu
+
+        
+      - name: Lint
+        run: npm run lint
+        
+      - name: Build
+        run: npm run build
+        env:
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          VITE_GMAIL_CLIENT_ID: ${{ secrets.VITE_GMAIL_CLIENT_ID }}
+          VITE_GMAIL_CLIENT_SECRET: ${{ secrets.VITE_GMAIL_CLIENT_SECRET }}
+
