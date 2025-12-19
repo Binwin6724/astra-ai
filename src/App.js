@@ -82,9 +82,16 @@ function App() {
 
   // Check if this is an OAuth callback
   useEffect(() => {
+    const searchParams = new URL(window.location.href).searchParams;
     const path = window.location.pathname;
     const hash = window.location.hash;
-    if (path.includes('/oauth/callback') || hash.includes('access_token')) {
+
+    if (
+      path.includes('/oauth/callback') ||
+      hash.includes('access_token') ||
+      searchParams.get('code') ||
+      searchParams.get('error')
+    ) {
       setIsOAuthCallback(true);
     }
   }, []);

@@ -59,8 +59,8 @@ function SettingsView({ settings, onUpdate, onClearData }) {
     setIsConnectingGmail(true);
 
     try {
-      // Create OAuth URL
-      const redirectUri = window.location.origin + '/oauth/callback';
+      // Create OAuth URL - Use current base URL for GitHub Pages compatibility
+      const redirectUri = window.location.href.split('?')[0].split('#')[0];
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       authUrl.searchParams.set('client_id', GMAIL_CLIENT_ID);
       authUrl.searchParams.set('redirect_uri', redirectUri);
