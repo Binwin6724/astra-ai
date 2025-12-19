@@ -20,16 +20,52 @@ export function useJobApplications() {
   }, [applications]);
 
   const saveJobApplication = useCallback((jobData) => {
+    const currentApps = applicationsRef.current;
+
+    // Check if job exists by ID
     if (jobData.id) {
-      setApplications((prev) =>
-        prev.map((j) => (j.id === jobData.id ? jobData : j))
-      );
+      const updatedApps = currentApps.map((j) => (j.id === jobData.id ? jobData : j));
+      applicationsRef.current = updatedApps;
+      setApplications(updatedApps);
       return `Job application for ${jobData.company} updated successfully.`;
-    } else {
-      const newJob = { ...jobData, id: Date.now().toString() };
-      setApplications((prev) => [newJob, ...prev]);
-      return `Successfully added ${newJob.role} at ${newJob.company} to your tracker.`;
     }
+
+    // Check if job exists by Company + Role (prevent duplicates)
+    // We use the Ref to check against the *very latest* state
+    const existingJobIndex = currentApps.findIndex(j =>
+      j.company.toLowerCase() === jobData.company.toLowerCase() &&
+      j.role.toLowerCase() === jobData.role.toLowerCase() &&
+      j.dateApplied === jobData.dateApplied && 
+      j.timeApplied === jobData.timeApplied &&
+      j.status === jobData.status &&
+      j.timeApplied === jobData.timeApplied
+    );
+
+    if (existingJobIndex >= 0) {
+      // Update existing job
+      const existingJob = currentApps[existingJobIndex];
+      const updatedJob = { ...existingJob, ...jobData, id: existingJob.id };
+
+      const updatedApps = [...currentApps];
+      updatedApps[existingJobIndex] = updatedJob;
+
+      applicationsRef.current = updatedApps;
+      setApplications(updatedApps);
+      return `Updated existing application for ${jobData.role} at ${jobData.company}.`;
+    }
+
+    // Create new job
+    // Add random suffix to prevent ID collisions in tight loops
+    const newJob = {
+      ...jobData,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+    };
+
+    const updatedApps = [newJob, ...currentApps];
+    applicationsRef.current = updatedApps;
+    setApplications(updatedApps);
+
+    return `Successfully added ${newJob.role} at ${newJob.company} to your tracker.`;
   }, []);
 
   const deleteJobApplication = useCallback((id) => {

@@ -16,6 +16,7 @@ function JobModal({ isOpen, onClose, onSave, editingJob }) {
     role: '',
     source: '',
     dateApplied: new Date().toISOString().split('T')[0],
+    timeApplied: new Date().toISOString().split('T')[1],
     status: JobStatus.APPLIED
   });
 
@@ -26,6 +27,7 @@ function JobModal({ isOpen, onClose, onSave, editingJob }) {
         role: editingJob.role,
         source: editingJob.source,
         dateApplied: editingJob.dateApplied,
+        timeApplied: editingJob.timeApplied,
         status: editingJob.status
       });
     } else {
@@ -34,6 +36,7 @@ function JobModal({ isOpen, onClose, onSave, editingJob }) {
         role: '',
         source: '',
         dateApplied: new Date().toISOString().split('T')[0],
+        timeApplied: new Date().toISOString().split('T')[1],
         status: JobStatus.APPLIED
       });
     }

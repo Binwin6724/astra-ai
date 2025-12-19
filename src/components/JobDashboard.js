@@ -19,7 +19,8 @@ function JobDashboard({
   onSave,
   isGmailConnected,
   onSyncGmail,
-  isSyncing
+  isSyncing,
+  timezone
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
@@ -96,6 +97,7 @@ function JobDashboard({
                 job={job}
                 onEdit={handleOpenEditModal}
                 onDelete={onDelete}
+                timezone={timezone}
               />
             ))}
           </div>

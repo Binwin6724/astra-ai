@@ -94,6 +94,13 @@ function AssistantView({ settingsRef, jobActions }) {
     onError: handleError
   });
 
+  // Cleanup on unmount - ensure session is stopped when navigating away
+  React.useEffect(() => {
+    return () => {
+      stopSession();
+    };
+  }, [stopSession]);
+
   // Handle text chat submission
   const handleSendText = async (e) => {
     if (e) e.preventDefault();
@@ -137,7 +144,7 @@ function AssistantView({ settingsRef, jobActions }) {
         }
       ]);
     } catch (err) {
-      setError('Text service unavailable. Check your connection or please see if you have given the API key in the settings');
+      setError('Text service unavailable. Check your connection.');
     } finally {
       setIsTextThinking(false);
     }
@@ -152,26 +159,24 @@ function AssistantView({ settingsRef, jobActions }) {
         <div className="z-10 text-center max-w-md w-full flex-1 flex flex-col justify-center">
           {/* Avatar */}
           <div
-            className={`w-40 h-40 mx-auto rounded-full flex items-center justify-center transition-all duration-700 relative ${
-              state === AssistantState.SPEAKING
+            className={`w-40 h-40 mx-auto rounded-full flex items-center justify-center transition-all duration-700 relative ${state === AssistantState.SPEAKING
                 ? 'bg-blue-500/10 scale-105'
                 : state === AssistantState.LISTENING
-                ? 'bg-violet-500/10 scale-105'
-                : 'bg-gray-800/20'
-            }`}
+                  ? 'bg-violet-500/10 scale-105'
+                  : 'bg-gray-800/20'
+              }`}
           >
             {(state === AssistantState.LISTENING ||
               state === AssistantState.SPEAKING) && (
-              <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-violet-500" />
-            )}
+                <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-violet-500" />
+              )}
             <div
-              className={`p-8 rounded-full transition-all duration-500 ${
-                state === AssistantState.SPEAKING
+              className={`p-8 rounded-full transition-all duration-500 ${state === AssistantState.SPEAKING
                   ? 'bg-blue-600 shadow-lg shadow-blue-500/20'
                   : state === AssistantState.LISTENING
-                  ? 'bg-violet-600 shadow-lg shadow-violet-500/20'
-                  : 'bg-gray-800'
-              }`}
+                    ? 'bg-violet-600 shadow-lg shadow-violet-500/20'
+                    : 'bg-gray-800'
+                }`}
             >
               {state === AssistantState.ERROR ? (
                 <AlertCircle size={48} className="text-red-400" />

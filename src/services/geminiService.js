@@ -10,8 +10,13 @@ import { GoogleGenAI, Modality, Type } from '@google/genai';
  * @param {Object} settings - User settings object
  * @returns {string} - API key
  */
+/**
+ * Gets the API key from settings or environment
+ * @param {Object} settings - User settings object
+ * @returns {string} - API key
+ */
 function getApiKey(settings = {}) {
-  return settings.geminiApiKey || process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+  return settings.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY || '';
 }
 
 /**
@@ -41,13 +46,14 @@ export const jobTrackingTools = [
         role: { type: Type.STRING, description: 'Job title or role' },
         source: { type: Type.STRING, description: 'Source (e.g., LinkedIn, Referral, Gmail)' },
         dateApplied: { type: Type.STRING, description: 'Date applied (YYYY-MM-DD)' },
+        timeApplied: { type: Type.STRING, description: 'Time applied (HH:MM)' },
         status: {
           type: Type.STRING,
           description: 'Status',
           enum: ['Applied', 'Interviewing', 'Rejected', 'Offer', 'Ghosted']
         }
       },
-      required: ['company', 'role', 'source', 'dateApplied', 'status']
+      required: ['company', 'role', 'source', 'dateApplied', 'timeApplied', 'status']
     }
   },
   {
@@ -81,6 +87,11 @@ export const jobTrackingTools = [
       },
       required: ['company']
     }
+  },
+  {
+    name: 'sync_gmail_emails',
+    description: 'Triggers a synchronization with Gmail to check for new job application emails.',
+    parameters: { type: Type.OBJECT, properties: {} }
   }
 ];
 
@@ -101,6 +112,7 @@ CORE RESPONSIBILITIES:
 3. Use 'save_job_application' when a user mentions applying to a new role OR when processing emails for new apps.
 4. Use 'update_job_status' when a user shares an update OR when emails indicate an interview invitation or rejection.
 5. Use 'delete_job_application' only if specifically asked to remove an entry.
+6. Use 'sync_gmail_emails' when the user asks to "sync", "check emails", "refresh inbox", or "update from gmail".
 
 TONE: Professional, encouraging, and highly efficient. 
 CONCISENESS: ${settings.conciseness}. If 'Concise', be extremely brief. If 'Detailed', provide more career advice alongside tool actions.`;
@@ -115,7 +127,7 @@ CONCISENESS: ${settings.conciseness}. If 'Concise', be extremely brief. If 'Deta
 export async function sendTextMessage(message, settings) {
   const ai = createAIClient(settings);
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     contents: message,
     config: {
       systemInstruction: getSystemInstruction(settings),
@@ -141,7 +153,8 @@ export async function createVoiceSession(options) {
   const ai = createAIClient(settings);
 
   return ai.live.connect({
-    model: 'gemini-2.0-flash-live-001',
+    model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+
     callbacks,
     config: {
       responseModalities: [Modality.AUDIO],
@@ -205,52 +218,201 @@ export async function analyzeResume(resumeText, jobDescription, settings = {}) {
 }
 
 /**
- * Fetches emails from Gmail API
- * @param {string} accessToken - Gmail OAuth access token
- * @returns {Promise<Array>} - Array of email objects
+ * Decodes base64url string to text
+ * @param {string} data - Base64url encoded string
+ * @returns {string} - Decoded text
  */
-async function fetchGmailEmails(accessToken) {
+function decodeBase64Url(data) {
+  if (!data) return '';
+  // Convert from base64url to base64
+  let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+  // Add padding if needed
+  while (base64.length % 4) {
+    base64 += '=';
+  }
+
   try {
+    // Decode base64 to text, handling UTF-8
+    return decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+  } catch (e) {
+    console.warn('Failed to decode email body part', e);
+    return '';
+  }
+}
+
+/**
+ * Recursively extracts email body from payload
+ * @param {Object} payload - Email payload
+ * @returns {string} - Extracted body text
+ */
+function extractEmailBody(payload) {
+  if (!payload) return '';
+
+  // 1. Direct body data
+  if (payload.body?.data) {
+    return decodeBase64Url(payload.body.data);
+  }
+
+  // 2. Multipart
+  if (payload.parts) {
+    for (const part of payload.parts) {
+      if (part.body?.data && (part.mimeType === 'text/plain' || part.mimeType === 'text/html')) {
+        return decodeBase64Url(part.body.data);
+      }
+
+      if (part.parts) {
+        const result = extractEmailBody(part);
+        if (result) return result;
+      }
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Exchanges an authorization code for access and refresh tokens
+ */
+export async function exchangeCodeForTokens(code, clientId, clientSecret, redirectUri) {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code'
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error_description || 'Failed to exchange code');
+  }
+
+  return await response.json();
+}
+
+
+/**
+ * Refreshes an expired access token using a refresh token
+ */
+export async function refreshGmailAccessToken(refreshToken, clientId, clientSecret) {
+  try {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'refresh_token'
+      })
+    });
+
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetches emails from Gmail API
+ * @param {Object} settings - App settings
+ * @returns {Promise<Object>} - Array of emails and potentially a new access token
+ */
+async function fetchGmailEmails(settings) {
+  let currentToken = settings.gmailAccessToken;
+  let newAccessToken = null;
+
+  const performFetch = async (token) => {
     // Search for job-related emails
     const query = 'subject:(application OR interview OR offer OR position OR job OR career OR hiring)';
     const searchUrl = `https://www.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`;
-    
+
     const searchResponse = await fetch(searchUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${token}` }
     });
-    
+
+    if (searchResponse.status === 401) {
+      throw new Error('GMAIL_UNAUTHORIZED');
+    }
+
     if (!searchResponse.ok) {
       throw new Error('Failed to fetch emails');
     }
-    
+
     const searchData = await searchResponse.json();
     const messages = searchData.messages || [];
-    
+
     // Fetch details for each message
     const emails = await Promise.all(
       messages.slice(0, 10).map(async (msg) => {
-        const msgUrl = `https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`;
+        const msgUrl = `https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`;
         const msgResponse = await fetch(msgUrl, {
-          headers: { Authorization: `Bearer ${accessToken}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         if (!msgResponse.ok) return null;
-        
+
         const msgData = await msgResponse.json();
-        const headers = msgData.payload?.headers || [];
-        
+        const payload = msgData.payload || {};
+        const headers = payload.headers || [];
+
+        const body = extractEmailBody(payload);
+
         return {
           from: headers.find(h => h.name === 'From')?.value || 'Unknown',
           subject: headers.find(h => h.name === 'Subject')?.value || 'No Subject',
-          snippet: msgData.snippet || ''
+          dateApplied: headers.find(h => h.name === 'Received')?.value || 'Unknown',
+          timeApplied: headers.find(h => h.name === 'Received')?.value || 'Unknown',
+          snippet: msgData.snippet || '',
+          body: body || msgData.snippet || '',
+          dateTime: headers.find(h => h.name === 'Received')?.value || 'Unknown',
         };
       })
     );
-    
+
     return emails.filter(Boolean);
+  };
+
+  try {
+    try {
+      const emails = await performFetch(currentToken);
+      return { emails, newAccessToken };
+    } catch (error) {
+      if (error.message === 'GMAIL_UNAUTHORIZED' && settings.gmailRefreshToken) {
+        // Try to refresh
+        console.log('Access token expired, attempting refresh...');
+        const refreshData = await refreshGmailAccessToken(
+          settings.gmailRefreshToken,
+          settings.gmailClientId || '193744440236-au46mlea5ctjic4o3bt92pgk7klhtbdo.apps.googleusercontent.com',
+          settings.gmailClientSecret || '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'
+        );
+
+        if (refreshData && refreshData.access_token) {
+          console.log('Refresh successful!');
+          newAccessToken = refreshData.access_token;
+          const emails = await performFetch(newAccessToken);
+          return { emails, newAccessToken };
+        }
+      }
+      throw error;
+    }
   } catch (error) {
+    if (error.message === 'GMAIL_UNAUTHORIZED') {
+      throw error;
+    }
     console.error('Gmail fetch error:', error);
-    return [];
+    return { emails: [], newAccessToken };
   }
 }
 
@@ -259,42 +421,46 @@ async function fetchGmailEmails(accessToken) {
  * @param {Object} settings - User settings
  * @returns {Promise<Object>} - Sync results with function calls
  */
-export async function syncGmailEmails(settings) {
+export async function syncGmailEmails(settings, applications) {
   let emails = [];
-  
+
   // If Gmail is connected and has access token, fetch real emails
-  if (settings.isGmailConnected && settings.gmailAccessToken) {
-    emails = await fetchGmailEmails(settings.gmailAccessToken);
-  }
-  
-  // Fallback to mock data if no real emails or not connected
-  if (emails.length === 0) {
-    emails = [
-      {
-        from: 'Google Careers',
-        subject: 'Update regarding your Software Engineer application',
-        snippet: "Hi there, we'd like to invite you for a virtual interview next Tuesday."
-      },
-      {
-        from: 'Stripe',
-        subject: 'Job Application Received',
-        snippet:
-          'Thank you for applying for the Senior Frontend Engineer position at Stripe. We have received your materials.'
-      },
-      {
-        from: 'Tesla HR',
-        subject: 'Application Status',
-        snippet:
-          'Unfortunately, we have decided to move forward with other candidates at this time.'
+  let newAccessToken = null;
+  if (settings.isGmailConnected && (settings.gmailAccessToken || settings.gmailRefreshToken)) {
+    try {
+      const fetchResult = await fetchGmailEmails(settings);
+      emails = fetchResult.emails;
+      newAccessToken = fetchResult.newAccessToken;
+    } catch (error) {
+      if (error.message === 'GMAIL_UNAUTHORIZED') {
+        throw new Error('Gmail session expired. Please reconnect in Settings.');
       }
-    ];
+      console.warn('Gmail fetch failed, using fallback mock data:', error);
+    }
   }
 
   const ai = createAIClient(settings);
   const response = await ai.models.generateContent({
     model: 'gemini-2.0-flash',
     contents: `Process these emails for job application updates. Use your tools to save or update the tracker.
-    EMAILS: ${JSON.stringify(emails)}`,
+    Current Job Applications: ${JSON.stringify(applications)}
+    
+    Then process the emails.
+    EMAILS: ${JSON.stringify(emails)}
+    
+    note - dateTime will be in this format - by 2002:a05:6520:50c7:b0:325:7f39:3094 with SMTP id y7csp11383lka;        Thu, 18 Dec 2025 21:32:14 -0800 (PST)
+    If there is duplicate email discard the older one.
+
+    Also make sure its an applied job that we are considering not any suggestions or other emails.
+    check the subject line and body of the email to make sure its an applied job.
+
+    Sometime LinkedIn will send a suggestion email for a job that we have already applied for.
+    Make sure to not consider those emails.
+
+    Example of suggestion email - 
+    Subject: [Company Name] is hiring a [Job Title]
+    
+    `,
     config: {
       systemInstruction: getSystemInstruction(settings),
       tools: [{ functionDeclarations: jobTrackingTools }]
@@ -304,6 +470,7 @@ export async function syncGmailEmails(settings) {
   return {
     functionCalls: response.candidates?.[0]?.content?.parts?.filter(
       (part) => part.functionCall
-    ) || []
+    ) || [],
+    newAccessToken
   };
 }

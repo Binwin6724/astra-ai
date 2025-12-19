@@ -52,6 +52,20 @@ export const ConcisenessLevels = {
 };
 
 /**
+ * Timezone Options
+ */
+export const Timezones = [
+  { label: 'UTC', value: 'UTC' },
+  { label: 'London (GMT)', value: 'Europe/London' },
+  { label: 'New York (EST)', value: 'America/New_York' },
+  { label: 'San Francisco (PST)', value: 'America/Los_Angeles' },
+  { label: 'Tokyo (JST)', value: 'Asia/Tokyo' },
+  { label: 'India (IST)', value: 'Asia/Kolkata' },
+  { label: 'Singapore (SGT)', value: 'Asia/Singapore' },
+  { label: 'Sydney (AEST)', value: 'Australia/Sydney' }
+];
+
+/**
  * Default Settings
  */
 export const DEFAULT_SETTINGS = {
@@ -59,9 +73,13 @@ export const DEFAULT_SETTINGS = {
   targetRole: '',
   voiceName: VoiceNames.ZEPHYR,
   conciseness: ConcisenessLevels.NORMAL,
+  timezone: 'UTC',
   isGmailConnected: false,
   gmailAccessToken: '',
+  gmailRefreshToken: '',
   gmailClientId: '',
+  gmailCode: '',
+  gmailClientSecret: '',
   geminiApiKey: ''
 };
 

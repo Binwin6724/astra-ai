@@ -13,10 +13,13 @@ import {
   ExternalLink,
   AlertCircle
 } from 'lucide-react';
-import { VoiceNames, ConcisenessLevels, STORAGE_KEYS } from '@/constants';
+import { VoiceNames, ConcisenessLevels, STORAGE_KEYS, Timezones } from '@/constants';
+import { exchangeCodeForTokens } from '@/services/geminiService';
+import { Globe } from 'lucide-react';
 
 // Gmail OAuth Configuration
 const GMAIL_CLIENT_ID = '193744440236-au46mlea5ctjic4o3bt92pgk7klhtbdo.apps.googleusercontent.com'; // User needs to set this up in Google Cloud Console
+const GMAIL_CLIENT_SECRET = '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'; // User needs to set this up in Google Cloud Console
 const GMAIL_SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 
 /**
@@ -28,7 +31,7 @@ const GMAIL_SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
  */
 function SettingsView({ settings, onUpdate, onClearData }) {
   const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(settings.geminiApiKey || '');
+  const [apiKeyInput, setApiKeyInput] = useState(settings.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [isConnectingGmail, setIsConnectingGmail] = useState(false);
 
   const handleChange = (e) => {
@@ -45,10 +48,11 @@ function SettingsView({ settings, onUpdate, onClearData }) {
     onUpdate({ ...settings, geminiApiKey: '' });
   };
 
+
   // Gmail OAuth Flow
   const handleConnectGmail = async () => {
-    if (!GMAIL_CLIENT_ID) {
-      alert('Gmail integration requires OAuth setup. Please configure GMAIL_CLIENT_ID in SettingsView.js');
+    if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET) {
+      alert('Gmail integration requires OAuth Client ID and Secret in SettingsView.js');
       return;
     }
 
@@ -60,9 +64,10 @@ function SettingsView({ settings, onUpdate, onClearData }) {
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       authUrl.searchParams.set('client_id', GMAIL_CLIENT_ID);
       authUrl.searchParams.set('redirect_uri', redirectUri);
-      authUrl.searchParams.set('response_type', 'token');
+      authUrl.searchParams.set('response_type', 'code'); // We want a code for exchange
+      authUrl.searchParams.set('access_type', 'offline'); // We want a refresh token
       authUrl.searchParams.set('scope', GMAIL_SCOPES);
-      authUrl.searchParams.set('prompt', 'consent');
+      authUrl.searchParams.set('prompt', 'consent'); // Ensure refresh token is sent
 
       // Open OAuth popup
       const popup = window.open(
@@ -72,30 +77,49 @@ function SettingsView({ settings, onUpdate, onClearData }) {
       );
 
       // Listen for OAuth callback
-      const handleMessage = (event) => {
+      const handleMessage = async (event) => {
         if (event.origin !== window.location.origin) return;
-        
-        if (event.data.type === 'gmail-oauth-success') {
-          onUpdate({
-            ...settings,
-            isGmailConnected: true,
-            gmailAccessToken: event.data.accessToken
-          });
-          popup?.close();
-        } else if (event.data.type === 'gmail-oauth-error') {
-          console.error('Gmail OAuth error:', event.data.error);
-          popup?.close();
+
+        if (event.data.type === 'gmail-oauth-success' || event.data.type === 'gmail-oauth-error') {
+          // Remove listener IMMEDIATELY so it doesn't run twice
+          window.removeEventListener('message', handleMessage);
+
+          if (event.data.type === 'gmail-oauth-success') {
+            try {
+              const { code } = event.data;
+              if (code) {
+                // Exchange the code for real tokens
+                const tokens = await exchangeCodeForTokens(
+                  code,
+                  GMAIL_CLIENT_ID,
+                  GMAIL_CLIENT_SECRET,
+                  redirectUri
+                );
+
+                onUpdate({
+                  ...settings,
+                  isGmailConnected: true,
+                  gmailAccessToken: tokens.access_token,
+                  gmailRefreshToken: tokens.refresh_token
+                });
+              }
+            } catch (err) {
+              console.error('Token exchange failed:', err);
+              alert('Gmail connection failed during token exchange.');
+            } finally {
+              setIsConnectingGmail(false);
+            }
+          } else {
+            console.error('Gmail OAuth error:', event.data.error);
+            setIsConnectingGmail(false);
+          }
         }
-        
-        window.removeEventListener('message', handleMessage);
-        setIsConnectingGmail(false);
       };
 
       window.addEventListener('message', handleMessage);
 
-      // Fallback timeout
+      // Fallback timeout to stop loader if user ignores popup
       setTimeout(() => {
-        window.removeEventListener('message', handleMessage);
         setIsConnectingGmail(false);
       }, 120000);
 
@@ -134,7 +158,7 @@ function SettingsView({ settings, onUpdate, onClearData }) {
     }
   };
 
-  const hasApiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY;
+  const hasApiKey = settings.geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
 
   return (
     <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
@@ -261,6 +285,25 @@ function SettingsView({ settings, onUpdate, onClearData }) {
                   placeholder="e.g. Senior Frontend Engineer"
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                  <Globe size={14} className="text-violet-400" />
+                  Your Region (Timezone)
+                </label>
+                <select
+                  name="timezone"
+                  value={settings.timezone || 'UTC'}
+                  onChange={handleChange}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all text-white appearance-none"
+                >
+                  {Timezones.map((tz) => (
+                    <option key={tz.value} value={tz.value} className="bg-gray-900">
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -362,11 +405,10 @@ function SettingsView({ settings, onUpdate, onClearData }) {
                     <button
                       key={level}
                       onClick={() => onUpdate({ ...settings, conciseness: level })}
-                      className={`flex-1 py-1.5 text-xs rounded-lg transition-all ${
-                        settings.conciseness === level
-                          ? 'bg-violet-600 text-white shadow-lg'
-                          : 'text-gray-500 hover:text-gray-300'
-                      }`}
+                      className={`flex-1 py-1.5 text-xs rounded-lg transition-all ${settings.conciseness === level
+                        ? 'bg-violet-600 text-white shadow-lg'
+                        : 'text-gray-500 hover:text-gray-300'
+                        }`}
                     >
                       {level}
                     </button>

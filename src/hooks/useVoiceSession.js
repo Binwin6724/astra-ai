@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { AssistantState, AUDIO_CONFIG } from '@/constants';
 import { decode, decodeAudioData, createAudioBlob, createVoiceSession } from '@/services';
 
@@ -22,6 +22,7 @@ export function useVoiceSession(options) {
 
   // Session ref
   const sessionRef = useRef(null);
+  const streamRef = useRef(null);
 
   // Transcription tracking
   const currentInputTranscription = useRef('');
@@ -40,6 +41,11 @@ export function useVoiceSession(options) {
   }, []);
 
   const startSession = useCallback(async () => {
+    // Guard against multiple sessions
+    if (state !== AssistantState.IDLE && state !== AssistantState.ERROR) {
+      return;
+    }
+
     try {
       setState(AssistantState.CONNECTING);
       nextStartTimeRef.current = 0;
@@ -67,6 +73,7 @@ export function useVoiceSession(options) {
 
       // Get microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
       // Create voice session
       const sessionPromise = createVoiceSession({
@@ -204,9 +211,20 @@ export function useVoiceSession(options) {
       scriptProcessorRef.current.onaudioprocess = null;
       scriptProcessorRef.current = null;
     }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
     stopAllAudio();
     setState(AssistantState.IDLE);
   }, [stopAllAudio]);
+
+  // Handle cleanup on unmount for the hook itself
+  useEffect(() => {
+    return () => {
+      stopSession();
+    };
+  }, [stopSession]);
 
   return {
     state,

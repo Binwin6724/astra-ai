@@ -9,7 +9,7 @@ import StatusIcon from './StatusIcon';
  * @param {Function} props.onEdit - Edit handler
  * @param {Function} props.onDelete - Delete handler
  */
-function JobCard({ job, onEdit, onDelete }) {
+function JobCard({ job, onEdit, onDelete, timezone }) {
   const getStatusStyle = (status) => {
     switch (status) {
       case 'Offer':
@@ -23,14 +23,39 @@ function JobCard({ job, onEdit, onDelete }) {
     }
   };
 
+  const formatDateTime = (dateString, timeString) => {
+    if (!dateString) return 'Unknown date';
+    try {
+      const combined = timeString ? `${dateString}T${timeString}` : dateString;
+      const date = new Date(combined);
+      
+      if (isNaN(date.getTime())) return dateString;
+
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+        timeZone: timezone || undefined
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
     <div className="glass rounded-2xl p-5 border border-white/5 hover:border-violet-500/30 transition-all group animate-in fade-in zoom-in-95 duration-300">
+      {/* ... existing header code ... */}
       <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-white group-hover:text-violet-400 transition-colors truncate">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-bold text-white group-hover:text-violet-400 transition-colors truncate leading-tight" title={job.role}>
             {job.role}
           </h3>
-          <p className="text-violet-300/80 font-medium truncate">{job.company}</p>
+          <p className="text-violet-300/80 font-medium truncate leading-tight" title={job.company}>
+            {job.company}
+          </p>
         </div>
         <div className="flex gap-1 ml-2">
           <button
@@ -61,7 +86,7 @@ function JobCard({ job, onEdit, onDelete }) {
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-400">
           <Calendar size={16} />
-          <span>Applied on {job.dateApplied}</span>
+          <span>Applied on {formatDateTime(job.dateApplied, job.timeApplied)}</span>
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-400">
           <Link2 size={16} />
