@@ -336,7 +336,7 @@ async function fetchGmailEmails(settings) {
   const performFetch = async (token) => {
     // Search for job-related emails
     const query = 'subject:(application OR interview OR offer OR position OR job OR career OR hiring)';
-    const searchUrl = `https://www.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`;
+    const searchUrl = `https://www.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`;
 
     const searchResponse = await fetch(searchUrl, {
       headers: { Authorization: `Bearer ${token}` }
