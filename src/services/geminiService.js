@@ -46,7 +46,7 @@ export const jobTrackingTools = [
         role: { type: Type.STRING, description: 'Job title or role' },
         source: { type: Type.STRING, description: 'Source (e.g., LinkedIn, Referral, Gmail)' },
         dateApplied: { type: Type.STRING, description: 'Date applied (YYYY-MM-DD)' },
-        timeApplied: { type: Type.STRING, description: 'Time applied (HH:MM) in 24-hour format (note: the time must be in UTC, but the time coming from the email can be in any format)' },
+        timeApplied: { type: Type.STRING, description: 'Time applied (HH:MM) in 24-hour format (note: the time must be in UTC, but the time coming from the email can be in PST format thus we need to convert it to UTC)' },
         status: {
           type: Type.STRING,
           description: 'Status',
