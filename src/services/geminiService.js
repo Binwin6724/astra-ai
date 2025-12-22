@@ -441,7 +441,7 @@ export async function syncGmailEmails(settings, applications) {
 
   const ai = createAIClient(settings);
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-pro',
     contents: `Process these emails for job application updates. Use your tools to save or update the tracker.
     Current Job Applications: ${JSON.stringify(applications)}
     
