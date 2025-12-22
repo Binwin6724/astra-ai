@@ -355,7 +355,7 @@ async function fetchGmailEmails(settings) {
 
     // Fetch details for each message
     const emails = await Promise.all(
-      messages.slice(0, 10).map(async (msg) => {
+      messages.slice(0, messages.length).map(async (msg) => {
         const msgUrl = `https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`;
         const msgResponse = await fetch(msgUrl, {
           headers: { Authorization: `Bearer ${token}` }
@@ -449,6 +449,7 @@ export async function syncGmailEmails(settings, applications) {
     EMAILS: ${JSON.stringify(emails)}
     
     note - dateTime will be in this format - by 2002:a05:6520:50c7:b0:325:7f39:3094 with SMTP id y7csp11383lka;        Thu, 18 Dec 2025 21:32:14 -0800 (PST)
+    The time coming from the email can be in PST format thus we need to convert it to UTC.
     If there is duplicate email discard the older one.
 
     Also make sure its an applied job that we are considering not any suggestions or other emails.
