@@ -31,10 +31,12 @@ function JobDashboard({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('All');
   const [selectedRole, setSelectedRole] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState('All');
 
   // Derived filters
   const companies = ['All', ...new Set(applications.map(job => job.company).filter(Boolean))].sort();
   const roles = ['All', ...new Set(applications.map(job => job.role).filter(Boolean))].sort();
+  const statuses = ['All', ...new Set(applications.map(job => job.status).filter(Boolean))].sort();
 
   const filteredApplications = applications.filter(job => {
     const matchesSearch =
@@ -42,8 +44,9 @@ function JobDashboard({
       (job.role?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesCompany = selectedCompany === 'All' || job.company === selectedCompany;
     const matchesRole = selectedRole === 'All' || job.role === selectedRole;
+    const matchesStatus = selectedStatus === 'All' || job.status === selectedStatus;
 
-    return matchesSearch && matchesCompany && matchesRole;
+    return matchesSearch && matchesCompany && matchesRole && matchesStatus;
   });
 
   const handleOpenAddModal = () => {
@@ -170,6 +173,27 @@ function JobDashboard({
                 </div>
               </div>
 
+              {/* Status Filter */}
+              <div className="relative min-w-[150px]">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <Loader2 size={16} className={selectedStatus !== 'All' ? 'text-violet-400' : ''} />
+                </div>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-8 text-white focus:outline-none focus:border-violet-500/50 transition-colors cursor-pointer"
+                >
+                  {statuses.map(status => (
+                    <option key={status} value={status} className="bg-gray-900 text-white">
+                      {status === 'All' ? 'All Statuses' : status}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <Filter size={14} />
+                </div>
+              </div>
+
               {/* Remove Rejected Button */}
               {applications.some(job => job.status === 'Rejected') && (
                 <button
@@ -228,7 +252,7 @@ function JobDashboard({
         onSave={onSave}
         editingJob={editingJob}
       />
-    </div>
+    </div >
   );
 }
 
